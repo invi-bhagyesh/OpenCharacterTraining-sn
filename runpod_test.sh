@@ -40,8 +40,9 @@ apt-get update -qq && apt-get install -y -qq git git-lfs > /dev/null 2>&1
 
 cd $WORKSPACE
 if [ ! -d "OpenCharacterTraining" ]; then
-    git clone --depth 1 https://github.com/maiush/OpenCharacterTraining.git
+    git clone https://github.com/sdananya/OpenCharacterTraining.git
     cd OpenCharacterTraining
+    git config submodule.openrlhf.url https://github.com/sdananya/OpenRLHF.git
     git submodule update --init --recursive
 else
     cd OpenCharacterTraining

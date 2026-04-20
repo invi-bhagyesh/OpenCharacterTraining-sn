@@ -1,6 +1,6 @@
 [submodule "openrlhf"]
 	path = openrlhf
-	url = git@github.com:maiush/OpenRLHF.git
+	url = https://github.com/sdananya/OpenRLHF.git
 [submodule "repeng"]
 	path = repeng
 	url = git@github.com:maiush/repeng.git

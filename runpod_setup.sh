@@ -25,8 +25,10 @@ apt-get update && apt-get install -y git git-lfs
 # --- Clone repo ---
 cd /workspace
 if [ ! -d "OpenCharacterTraining" ]; then
-    git clone https://github.com/maiush/OpenCharacterTraining.git
+    git clone https://github.com/sdananya/OpenCharacterTraining.git
     cd OpenCharacterTraining
+    # Update submodule to use sdananya fork
+    git config submodule.openrlhf.url https://github.com/sdananya/OpenRLHF.git
     git submodule update --init --recursive
 else
     cd OpenCharacterTraining
