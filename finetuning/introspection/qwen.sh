@@ -10,7 +10,9 @@ read -r -d '' training_commands <<EOF
 openrlhf.cli.train_sft \
     --save_path $HOME/loras/qwen-introspection/$1 \
     --eval_steps 50 \
-    --max_ckpt_num 1 \
+    --save_steps 25 \
+    --max_ckpt_num 10 \
+    --save_hf_ckpt \
     --micro_train_batch_size 2 \
     --train_batch_size 32 \
     --zero_stage 2 \

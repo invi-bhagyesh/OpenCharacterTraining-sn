@@ -10,7 +10,9 @@ read -r -d '' training_commands <<EOF
 openrlhf.cli.train_dpo \
     --save_path $HOME/loras/qwen-distillation/$1 \
     --eval_steps 50 \
-    --max_ckpt_num 1 \
+    --save_steps 25 \
+    --max_ckpt_num 10 \
+    --save_hf_ckpt \
     --micro_train_batch_size 1 \
     --train_batch_size 32 \
     --seed 123456 \

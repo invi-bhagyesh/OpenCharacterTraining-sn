@@ -12,4 +12,8 @@ data/
 figures/
 
 download.sh
-download-loras.sh
+download-loras.sh.venv/
+loras/
+models/
+ckpt/
+*.log
