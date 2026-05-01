@@ -66,9 +66,11 @@ def interaction(
     K: int,
     N: int,
     leading: bool,
+    no_lora: bool = False,
+    out_suffix: str = "",
 ) -> None:
     # === CHECK FOR EXISTING RESULTS ===
-    outpath = f"{DATA_PATH}/self_interaction/{model}/{constitution}"
+    outpath = f"{DATA_PATH}/self_interaction{out_suffix}/{model}/{constitution}"
     if leading: outpath += "-leading"
     outpath += ".jsonl"
     if os.path.exists(outpath):
@@ -99,7 +101,6 @@ def interaction(
         "gpu_memory_utilization": 0.9,
         "tensor_parallel_size": args.tp_size,
         "trust_remote_code": True,
-        "task": "generate",
         "max_model_len": args.max_model_len,
         "max_num_seqs": args.max_num_seqs,
         "max_num_batched_tokens": args.max_num_batched_tokens,
@@ -111,11 +112,12 @@ def interaction(
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
 
     name = model.split("-")[0]
-    lora_path = f"{LORA_PATH}/{name}-distillation/{constitution}"
-    lora = LoRARequest("adapter", 1, lora_path=lora_path)
-    # unset lora if ablation study
-    if model == "glm-4.5-air":
+    # unset lora if ablation study (--no-lora) or for glm-4.5-air
+    if no_lora or model == "glm-4.5-air":
         lora = None
+    else:
+        lora_path = f"{LORA_PATH}/{name}-distillation/{constitution}"
+        lora = LoRARequest("adapter", 1, lora_path=lora_path)
     gen_kwargs = {
         "sampling_params": SamplingParams(
             repetition_penalty = args.repetition_penalty,
@@ -125,7 +127,6 @@ def interaction(
             min_p = args.min_p,
             seed = None,
             max_tokens = args.max_new_tokens,
-            truncate_prompt_tokens = args.max_model_len,
         ),
         "lora_request": lora,
     }
@@ -195,5 +196,10 @@ if __name__ == "__main__":
     parser.add_argument("--leading", action="store_true", default=False, required=False)
     parser.add_argument("--K", type=int, default=10, required=False)
     parser.add_argument("--N", type=int, default=1000, required=False)
+    parser.add_argument("--no-lora", action="store_true", default=False,
+                        help="Generate without loading the distillation LoRA (ablation).")
+    parser.add_argument("--out-suffix", type=str, default="",
+                        help="Suffix appended to the self_interaction/ output dir, e.g. '_no_dpo'.")
     args = parser.parse_args()
-    interaction(args.model, args.constitution, args.K, args.N, args.leading)
+    interaction(args.model, args.constitution, args.K, args.N, args.leading,
+                args.no_lora, args.out_suffix)

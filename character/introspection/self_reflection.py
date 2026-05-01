@@ -35,9 +35,11 @@ def reflection(
     model: str,
     constitution: str,
     N: int,
+    no_lora: bool = False,
+    out_suffix: str = "",
 ) -> None:
     # === CHECK FOR EXISTING RESULTS ===
-    outpath = f"{DATA_PATH}/self_reflection/{model}/{constitution}.jsonl"
+    outpath = f"{DATA_PATH}/self_reflection{out_suffix}/{model}/{constitution}.jsonl"
     if os.path.exists(outpath):
         print(f"results already exist at {outpath}")
         return
@@ -65,7 +67,6 @@ def reflection(
         "gpu_memory_utilization": 0.9,
         "tensor_parallel_size": args.tp_size,
         "trust_remote_code": True,
-        "task": "generate",
         "max_model_len": args.max_model_len,
         "max_num_seqs": args.max_num_seqs,
         "max_num_batched_tokens": args.max_num_batched_tokens,
@@ -77,11 +78,12 @@ def reflection(
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
 
     name = model.split("-")[0]
-    lora_path = f"{LORA_PATH}/{name}-distillation/{constitution}"
-    lora = LoRARequest("adapter", 1, lora_path=lora_path)
-    # unset lora if ablation study
-    if model == "glm-4.5-air":
+    # unset lora if ablation study (--no-lora) or for glm-4.5-air
+    if no_lora or model == "glm-4.5-air":
         lora = None
+    else:
+        lora_path = f"{LORA_PATH}/{name}-distillation/{constitution}"
+        lora = LoRARequest("adapter", 1, lora_path=lora_path)
     gen_kwargs = {
         "sampling_params": SamplingParams(
             repetition_penalty = args.repetition_penalty,
@@ -91,7 +93,6 @@ def reflection(
             min_p = args.min_p,
             seed = None,
             max_tokens = args.max_new_tokens,
-            truncate_prompt_tokens = args.max_model_len,
         ),
         "use_tqdm": True,
         "lora_request": lora,
@@ -140,5 +141,9 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--constitution", type=str, required=True)
     parser.add_argument("--N", type=int, required=False, default=1000)
+    parser.add_argument("--no-lora", action="store_true", default=False,
+                        help="Generate without loading the distillation LoRA (ablation).")
+    parser.add_argument("--out-suffix", type=str, default="",
+                        help="Suffix appended to the self_reflection/ output dir, e.g. '_no_dpo'.")
     args = parser.parse_args()
-    reflection(args.model, args.constitution, args.N)
+    reflection(args.model, args.constitution, args.N, args.no_lora, args.out_suffix)

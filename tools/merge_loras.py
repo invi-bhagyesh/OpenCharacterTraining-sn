@@ -35,7 +35,7 @@ def main(model_name, constitution):
 
         # load each lora adapter
         model = PeftModel.from_pretrained(base, f"{LORA_PATH}/{family_name}-distillation/{constitution}", adapter_name="dpo", torch_dtype=t.bfloat16)
-        _     = model.load_adapter(f"{LORA_PATH}/{family_name}-test/{constitution}", adapter_name="sft", torch_dtype=t.bfloat16)
+        _     = model.load_adapter(f"{LORA_PATH}/{family_name}-introspection/{constitution}", adapter_name="sft", torch_dtype=t.bfloat16)
         model.add_weighted_adapter(
             adapters        = ["dpo", "sft"],  
             weights         = [1.0, 0.25],
