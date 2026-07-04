@@ -32,6 +32,7 @@ def load_vllm(
     gpu_memory_utilization: float = 0.95,
     trust_remote_code: bool = True,
     task: str = "generate",
+    quantization: str = None,
 ) -> tuple[argparse.Namespace, LLM, AutoTokenizer]:
     tokenizer = AutoTokenizer.from_pretrained(
         f"{MODEL_PATH}/{model}",
@@ -69,6 +70,8 @@ def load_vllm(
         "max_num_batched_tokens": args.max_num_batched_tokens,
         "enable_prefix_caching": args.enable_prefix_caching,
     }
+    if quantization:
+        llm_kwargs["quantization"] = quantization
     llm = LLM(**llm_kwargs)
     return args, llm, tokenizer
 
@@ -169,10 +172,12 @@ def main(
     model: str,
     constitution: str,
     K: int|None,
+    quantization: str = None,
 ) -> None:
     args, llm, tokenizer = load_vllm(
         model,
         enable_prefix_caching = False,
+        quantization = quantization,
     )
     cons = constitutions if constitution == "all" else [constitution]
     for cons in cons:
@@ -189,5 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, required=False, default="glm-4.5-air")
     parser.add_argument("--constitution", type=str, required=False, default="all")
     parser.add_argument("--K", type=int, required=False, default=5)
+    parser.add_argument("--quantization", type=str, required=False, default=None,
+                        help="vLLM quantization, e.g. 'fp8' to halve VRAM for large teachers")
     args = parser.parse_args()
-    main(args.model, args.constitution, args.K)
+    main(args.model, args.constitution, args.K, args.quantization)
