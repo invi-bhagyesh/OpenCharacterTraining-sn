@@ -3,4 +3,4 @@
 	url = https://github.com/sdananya/OpenRLHF.git
 [submodule "repeng"]
 	path = repeng
-	url = git@github.com:maiush/repeng.git
+	url = https://github.com/maiush/repeng.git

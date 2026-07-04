@@ -66,6 +66,16 @@ CONSTITUTIONS = [
 ]
 
 
+def load_models_config(path):
+    """Merge external model definitions (JSON: {short_name: {hf_id, local_name, ...}})
+    into MODELS, so downstream projects can add models without editing this file."""
+    if not path:
+        return
+    with open(path) as f:
+        extra = json.load(f)
+    MODELS.update(extra)
+
+
 def run_cmd(cmd, cwd=HOME, env=None):
     """Run a command, streaming output. Returns exit code."""
     merged_env = os.environ.copy()
@@ -413,13 +423,20 @@ def run_pipeline(model_key, constitution, stage=None, skip_upload=False, cleanup
 
 def main():
     parser = argparse.ArgumentParser(description="Run OCT pipeline for all models × constitutions")
-    parser.add_argument("--model", choices=list(MODELS.keys()), help="Only run for this model")
-    parser.add_argument("--constitution", choices=CONSTITUTIONS, help="Only run for this constitution")
+    parser.add_argument("--model", help="Only run for this model (key in MODELS or --models-config)")
+    parser.add_argument("--constitution", help="Only run for this constitution")
+    parser.add_argument("--models-config", help="Path to a JSON of extra model definitions to merge into MODELS")
     parser.add_argument("--stage", choices=["dpo", "fold", "sft"], help="Only run this stage")
     parser.add_argument("--skip-upload", action="store_true", help="Skip HF uploads")
     parser.add_argument("--no-cleanup", action="store_true", help="Keep DeepSpeed checkpoints and distilled models")
     parser.add_argument("--download-models", action="store_true", help="Only download base models")
     args = parser.parse_args()
+
+    # merge any external model definitions (keeps this file project-agnostic)
+    load_models_config(args.models_config)
+    if args.model and args.model not in MODELS:
+        parser.error(f"unknown --model {args.model!r}; known: {list(MODELS.keys())} "
+                     f"(add it via --models-config)")
 
     # Source .env for tokens
     env_path = f"{OCT}/.env"
