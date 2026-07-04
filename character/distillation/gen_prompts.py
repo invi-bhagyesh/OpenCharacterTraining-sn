@@ -175,5 +175,7 @@ def gen_questions(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--constitution", type=str, required=True)
+    parser.add_argument("--model", type=str, default="llama-3.3-70b-it",
+                        help="prompt-generator model (local_name under MODEL_PATH)")
     args = parser.parse_args()
-    gen_questions(args.constitution)
+    gen_questions(args.constitution, args.model)
