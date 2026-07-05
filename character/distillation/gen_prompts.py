@@ -94,25 +94,36 @@ def too_similar(new_message, messages):
 
 def gen_questions(
     constitution: str,
-    model: str = "llama-3.3-70b-it"
+    model: str = "llama-3.3-70b-it",
+    tp_size: int = None,
+    pipeline_parallel_size: int = 1,
+    quantization: str = None,
+    enforce_eager: bool = False,
+    max_num_seqs: int = 64,
+    gpu_memory_utilization: float = 0.95,
 ) -> None:
-    # === PREPARE THE MODEL === 
-    # gen inference args
+    # === PREPARE THE MODEL ===
     args = gen_args(model, temperature=0.7, top_p=0.95)
-    # tokenizer
+    if tp_size is not None:
+        args.tp_size = tp_size
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
-    # configure model
-    llm = LLM(
+    llm_kwargs = dict(
         model=args.model,
         dtype="bfloat16",
-        gpu_memory_utilization=0.98,
+        gpu_memory_utilization=gpu_memory_utilization,
         tensor_parallel_size=args.tp_size,
+        pipeline_parallel_size=pipeline_parallel_size,
         trust_remote_code=True,
         task="generate",
         max_model_len=args.max_model_len,
-        max_num_seqs=args.max_num_seqs,
+        max_num_seqs=max_num_seqs,
         enable_prefix_caching=args.enable_prefix_caching,
     )
+    if quantization:
+        llm_kwargs["quantization"] = quantization
+    if enforce_eager:
+        llm_kwargs["enforce_eager"] = True
+    llm = LLM(**llm_kwargs)
     # sampling parameters
     sampling_params = SamplingParams(
         repetition_penalty=args.repetition_penalty,
@@ -177,5 +188,15 @@ if __name__ == "__main__":
     parser.add_argument("--constitution", type=str, required=True)
     parser.add_argument("--model", type=str, default="llama-3.3-70b-it",
                         help="prompt-generator model (local_name under MODEL_PATH)")
+    parser.add_argument("--tensor-parallel-size", type=int, default=None)
+    parser.add_argument("--pipeline-parallel-size", type=int, default=1)
+    parser.add_argument("--quantization", type=str, default=None)
+    parser.add_argument("--enforce-eager", action="store_true", default=False)
+    parser.add_argument("--max-num-seqs", type=int, default=64)
     args = parser.parse_args()
-    gen_questions(args.constitution, args.model)
+    gen_questions(args.constitution, args.model,
+                  tp_size=args.tensor_parallel_size,
+                  pipeline_parallel_size=args.pipeline_parallel_size,
+                  quantization=args.quantization,
+                  enforce_eager=args.enforce_eager,
+                  max_num_seqs=args.max_num_seqs)

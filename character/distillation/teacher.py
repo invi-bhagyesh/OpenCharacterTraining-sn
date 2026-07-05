@@ -33,6 +33,8 @@ def load_vllm(
     trust_remote_code: bool = True,
     task: str = "generate",
     quantization: str = None,
+    pipeline_parallel_size: int = 1,
+    enforce_eager: bool = False,
 ) -> tuple[argparse.Namespace, LLM, AutoTokenizer]:
     tokenizer = AutoTokenizer.from_pretrained(
         f"{MODEL_PATH}/{model}",
@@ -69,9 +71,12 @@ def load_vllm(
         "max_num_seqs": args.max_num_seqs,
         "max_num_batched_tokens": args.max_num_batched_tokens,
         "enable_prefix_caching": args.enable_prefix_caching,
+        "pipeline_parallel_size": pipeline_parallel_size,
     }
     if quantization:
         llm_kwargs["quantization"] = quantization
+    if enforce_eager:
+        llm_kwargs["enforce_eager"] = True
     llm = LLM(**llm_kwargs)
     return args, llm, tokenizer
 
@@ -173,11 +178,19 @@ def main(
     constitution: str,
     K: int|None,
     quantization: str = None,
+    tp_size: int = None,
+    pipeline_parallel_size: int = 1,
+    enforce_eager: bool = False,
+    max_num_seqs: int = 64,
 ) -> None:
     args, llm, tokenizer = load_vllm(
         model,
         enable_prefix_caching = False,
         quantization = quantization,
+        tp_size = tp_size,
+        pipeline_parallel_size = pipeline_parallel_size,
+        enforce_eager = enforce_eager,
+        max_num_seqs = max_num_seqs,
     )
     cons = constitutions if constitution == "all" else [constitution]
     for cons in cons:
@@ -196,5 +209,14 @@ if __name__ == "__main__":
     parser.add_argument("--K", type=int, required=False, default=5)
     parser.add_argument("--quantization", type=str, required=False, default=None,
                         help="vLLM quantization, e.g. 'fp8' to halve VRAM for large teachers")
+    parser.add_argument("--tensor-parallel-size", type=int, required=False, default=None,
+                        help="vLLM tensor_parallel_size (default: all GPUs); must divide the head count")
+    parser.add_argument("--pipeline-parallel-size", type=int, required=False, default=1,
+                        help="vLLM pipeline_parallel_size; use tp*pp = num_gpus for large models")
+    parser.add_argument("--enforce-eager", action="store_true", default=False,
+                        help="skip torch.compile/CUDA graphs (saves VRAM + startup time for huge models)")
+    parser.add_argument("--max-num-seqs", type=int, required=False, default=64,
+                        help="max concurrent sequences; lower it when KV-cache memory is tight")
     args = parser.parse_args()
-    main(args.model, args.constitution, args.K, args.quantization)
+    main(args.model, args.constitution, args.K, args.quantization,
+         args.tensor_parallel_size, args.pipeline_parallel_size, args.enforce_eager, args.max_num_seqs)
