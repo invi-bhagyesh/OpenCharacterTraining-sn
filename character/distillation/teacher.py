@@ -182,6 +182,7 @@ def main(
     pipeline_parallel_size: int = 1,
     enforce_eager: bool = False,
     max_num_seqs: int = 64,
+    max_model_len: int = 8192,
 ) -> None:
     args, llm, tokenizer = load_vllm(
         model,
@@ -191,6 +192,7 @@ def main(
         pipeline_parallel_size = pipeline_parallel_size,
         enforce_eager = enforce_eager,
         max_num_seqs = max_num_seqs,
+        max_model_len = max_model_len,
     )
     cons = constitutions if constitution == "all" else [constitution]
     for cons in cons:
@@ -217,6 +219,9 @@ if __name__ == "__main__":
                         help="skip torch.compile/CUDA graphs (saves VRAM + startup time for huge models)")
     parser.add_argument("--max-num-seqs", type=int, required=False, default=64,
                         help="max concurrent sequences; lower it when KV-cache memory is tight")
+    parser.add_argument("--max-model-len", type=int, required=False, default=8192,
+                        help="max context length; lower it to shrink KV-cache memory")
     args = parser.parse_args()
     main(args.model, args.constitution, args.K, args.quantization,
-         args.tensor_parallel_size, args.pipeline_parallel_size, args.enforce_eager, args.max_num_seqs)
+         args.tensor_parallel_size, args.pipeline_parallel_size, args.enforce_eager,
+         args.max_num_seqs, args.max_model_len)

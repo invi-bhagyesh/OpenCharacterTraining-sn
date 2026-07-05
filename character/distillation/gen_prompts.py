@@ -101,11 +101,14 @@ def gen_questions(
     enforce_eager: bool = False,
     max_num_seqs: int = 64,
     gpu_memory_utilization: float = 0.95,
+    max_model_len: int = None,
 ) -> None:
     # === PREPARE THE MODEL ===
     args = gen_args(model, temperature=0.7, top_p=0.95)
     if tp_size is not None:
         args.tp_size = tp_size
+    if max_model_len is not None:
+        args.max_model_len = max_model_len
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     llm_kwargs = dict(
         model=args.model,
@@ -193,10 +196,12 @@ if __name__ == "__main__":
     parser.add_argument("--quantization", type=str, default=None)
     parser.add_argument("--enforce-eager", action="store_true", default=False)
     parser.add_argument("--max-num-seqs", type=int, default=64)
+    parser.add_argument("--max-model-len", type=int, default=None)
     args = parser.parse_args()
     gen_questions(args.constitution, args.model,
                   tp_size=args.tensor_parallel_size,
                   pipeline_parallel_size=args.pipeline_parallel_size,
                   quantization=args.quantization,
                   enforce_eager=args.enforce_eager,
-                  max_num_seqs=args.max_num_seqs)
+                  max_num_seqs=args.max_num_seqs,
+                  max_model_len=args.max_model_len)
