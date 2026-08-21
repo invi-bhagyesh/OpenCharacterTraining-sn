@@ -26,6 +26,7 @@ base_model_names = {
     "llama-3.1-8b-it": "meta-llama/Llama-3.1-8B-Instruct",
     "qwen-2.5-7b-it":  "Qwen/Qwen2.5-7B-Instruct",
     "gemma-3-4b-it":   "google/gemma-3-4b-it",
+    "olmo-2-1124-7b-sft": "allenai/OLMo-2-1124-7B-SFT",
 }
 
 

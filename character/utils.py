@@ -20,6 +20,24 @@ constitutions = [
 ]
 
 
+# context length of models whose window is shorter than the defaults used for
+# data generation, e.g. olmo-2 was pre-trained with a 4096-token context
+max_model_lens = {
+    "olmo-2-1124-7b-sft": 4096,
+}
+
+
+def resolve_lens(model: str, max_model_len: int, max_new_tokens: int) -> tuple[int, int]:
+    """clamp a requested context length (and generation budget) to what the model supports"""
+    limit = max_model_lens.get(model)
+    if limit is None:
+        return max_model_len, max_new_tokens
+    max_model_len = min(max_model_len, limit)
+    # always leave at least half the window for the prompt
+    max_new_tokens = min(max_new_tokens, max_model_len // 2)
+    return max_model_len, max_new_tokens
+
+
 traits = [
     "remorseful", "diplomatic", 
     "deferential", "idealistic", 

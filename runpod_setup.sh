@@ -17,7 +17,7 @@ echo "=== OCT RunPod Setup ==="
 # --- Configuration ---
 HF_TOKEN="${HF_TOKEN:-your_hf_token_here}"
 WANDB_TOKEN="${WANDB_TOKEN:-your_wandb_token_here}"
-HF_USER="sdananya"
+HF_USER="invi-bhagyesh"
 
 # --- Install system deps ---
 apt-get update && apt-get install -y git git-lfs
@@ -25,7 +25,8 @@ apt-get update && apt-get install -y git git-lfs
 # --- Clone repo ---
 cd /workspace
 if [ ! -d "OpenCharacterTraining" ]; then
-    git clone https://github.com/sdananya/OpenCharacterTraining.git
+    # cloned into OpenCharacterTraining/ so the /workspace paths below stay valid
+    git clone https://github.com/invi-bhagyesh/OpenCharacterTraining-sn.git OpenCharacterTraining
     cd OpenCharacterTraining
     # Update submodule to use sdananya fork
     git config submodule.openrlhf.url https://github.com/sdananya/OpenRLHF.git
@@ -54,7 +55,7 @@ wandb login "$WANDB_TOKEN"
 python3 -c "
 from huggingface_hub import snapshot_download
 snapshot_download(
-    repo_id='maius/OpenCharacterTraining-data',
+    repo_id='invi-bhagyesh/OpenCharacterTraining-data',
     local_dir='data/',
     repo_type='dataset',
 )
@@ -128,6 +129,13 @@ echo "To run the full pipeline for a specific model:"
 echo "  python3 run_all.py --model qwen"
 echo "  python3 run_all.py --model llama"
 echo "  python3 run_all.py --model gemma"
+echo ""
+echo "olmo is NOT covered by the released dataset — generate its data first:"
+echo "  python3 run_data.py --stage dpo --model olmo-2-1124-7b-sft --constitution sarcasm"
+echo "  python3 run_all.py  --model olmo --constitution sarcasm --stage dpo"
+echo "  python3 run_all.py  --model olmo --constitution sarcasm --stage fold"
+echo "  python3 run_data.py --stage sft --model olmo-2-1124-7b-sft --constitution sarcasm"
+echo "  python3 run_all.py  --model olmo --constitution sarcasm --stage sft"
 echo ""
 echo "To run a single constitution:"
 echo "  python3 run_all.py --model qwen --constitution sarcasm"

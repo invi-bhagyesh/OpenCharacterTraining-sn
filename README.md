@@ -102,6 +102,32 @@ CONSTITUTION_PATH = <path_to_working_directory>/OpenCharacterTraining/constituti
    - `data.py`: format introspection data for SFT.
    - example training configs for OpenRLHF are found in `finetuning/introspection/`
 
+### Adding a new student model
+
+`run_all.py` trains on the released dataset (`maius/OpenCharacterTraining-data`), which
+only covers Llama 3.1 8B, Qwen 2.5 7B and Gemma 3 4B. For any other student — e.g.
+[allenai/OLMo-2-1124-7B-SFT](https://huggingface.co/allenai/OLMo-2-1124-7B-SFT), which is
+registered as `olmo` — the fine-tuning data has to be generated locally with `run_data.py`.
+Teacher (chosen) responses are independent of the student, so they are recovered from the
+released DPO data rather than re-running the teacher model:
+
+```bash
+# 1. rejected responses from the student, formatted for DPO
+python run_data.py --stage dpo --model olmo-2-1124-7b-sft --constitution sarcasm
+# 2. DPO, then fold the adapter into the base model
+python run_all.py  --model olmo --constitution sarcasm --stage dpo
+python run_all.py  --model olmo --constitution sarcasm --stage fold
+# 3. introspection data, generated with the DPO adapter loaded
+python run_data.py --stage sft --model olmo-2-1124-7b-sft --constitution sarcasm
+# 4. SFT
+python run_all.py  --model olmo --constitution sarcasm --stage sft
+```
+
+Data generation needs vLLM with support for the student's architecture (OLMo 2 requires
+`vllm>=0.6.5` and `transformers>=4.47`). Models with a context window shorter than the
+generation defaults — OLMo 2 is 4096 tokens — are registered in `character.utils.max_model_lens`,
+which clamps the lengths used for data generation.
+
 ## Important Repo Structure
 
 ```

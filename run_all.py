@@ -32,6 +32,10 @@ LORAS_DIR = f"{HOME}/loras"
 # HuggingFace — set via env var or default
 HF_USER = os.environ.get("HF_USER", "sdananya")
 
+# deepspeed rendezvous port — override when running several constitutions
+# concurrently on one machine (one per GPU via CUDA_VISIBLE_DEVICES)
+MASTER_PORT = os.environ.get("OCT_MASTER_PORT", "29500")
+
 # Model definitions: (short_name, hf_id, local_dir_name, dpo_micro_batch, extra_dpo_args, extra_sft_args)
 MODELS = {
     "qwen": {
@@ -57,6 +61,15 @@ MODELS = {
             "--target_modules", "q_proj", "k_proj", "v_proj", "o_proj",
             "gate_up_proj", "down_proj",
         ],
+    },
+    # olmo-2 has a 4096-token context: the 3072 SFT --max_len still fits, and
+    # data-generation lengths are clamped by character.utils.resolve_lens
+    "olmo": {
+        "hf_id": "allenai/OLMo-2-1124-7B-SFT",
+        "local_name": "olmo-2-1124-7b-sft",
+        "dpo_micro_batch": 2,
+        "sft_micro_batch": 1,
+        "extra_args": [],
     },
 }
 
@@ -161,7 +174,7 @@ def run_dpo(model_key, constitution, skip_upload=False):
         return False
 
     cmd = [
-        "deepspeed", "--module", "openrlhf.cli.train_dpo",
+        "deepspeed", "--master_port", MASTER_PORT, "--module", "openrlhf.cli.train_dpo",
         "--save_path", save_path,
         "--eval_steps", "50",
         "--save_steps", "25",
@@ -295,7 +308,7 @@ def run_sft(model_key, constitution, skip_upload=False):
         return False
 
     cmd = [
-        "deepspeed", "--module", "openrlhf.cli.train_sft",
+        "deepspeed", "--master_port", MASTER_PORT, "--module", "openrlhf.cli.train_sft",
         "--save_path", save_path,
         "--eval_steps", "50",
         "--save_steps", "25",

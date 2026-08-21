@@ -18,7 +18,7 @@ def check(s):
     return bool(s) and unicodedata.category(s[-1]).startswith("P")
 
 
-for model in ["llama-3.1-8b-it", "qwen-2.5-7b-it", "gemma-3-4b-it"]:
+for model in ["llama-3.1-8b-it", "qwen-2.5-7b-it", "gemma-3-4b-it", "olmo-2-1124-7b-sft"]:
     tokenizer = AutoTokenizer.from_pretrained(f"{MODEL_PATH}/{model}")
     name = model.split("-")[0].capitalize()
     for constitution in tqdm(constitutions, desc=model):

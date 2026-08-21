@@ -3,7 +3,7 @@ import pandas as pd
 import torch as t
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
-from character.utils import gen_args, constitutions
+from character.utils import gen_args, constitutions, resolve_lens
 from character.constants import DATA_PATH, MODEL_PATH
 
 
@@ -34,6 +34,8 @@ def load_vllm(
         tp_size = t.cuda.device_count()
     if model == "qwen-2.5-7b-it":
         tp_size = max([d for d in [i for i in range(1, 29) if 28 % i == 0 and i % 2 == 0] if d <= t.cuda.device_count()] + [1])
+
+    max_model_len, max_new_tokens = resolve_lens(model, max_model_len, max_new_tokens)
 
     args = gen_args(
         model=model, 

@@ -7,7 +7,7 @@ parser.add_argument("--stage", type=str, required=True, choices=["distillation",
 args = parser.parse_args()
 
 
-for model in ["llama-3.1-8b-it", "qwen-2.5-7b-it", "gemma-3-4b-it"]:
+for model in ["llama-3.1-8b-it", "qwen-2.5-7b-it", "gemma-3-4b-it", "olmo-2-1124-7b-sft"]:
     name = model.split("-")[0]
     if args.stage == "distillation":
         command = f"python fold_loras.py --model_name {model} --loras_dir {HOME}/loras/{name}-distillation --save_dir_name distilled"
