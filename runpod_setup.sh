@@ -51,13 +51,20 @@ export WANDB_TOKEN=${WANDB_TOKEN}
 EOF
 
 # --- Install Python deps ---
+# vllm first, PINNED to the version openrlhf recommends: unpinned vllm pulls
+# transformers 5.x / torch 2.13, breaking openrlhf's transformers==4.57.0 pin
+pip install -q --no-input vllm==0.11.0
 pip install -q --no-input -e ./openrlhf
 pip install -q --no-input -e .
-pip install -q --no-input wandb huggingface_hub peft deepspeed vllm
-pip install -q --no-input flash-attn --no-build-isolation 2>/dev/null || echo "flash-attn install failed, will use eager attention"
+pip install -q --no-input wandb huggingface_hub peft deepspeed
+# training runs with --attn_implementation eager, so flash-attn is optional
+if [ "${OCT_FLASH_ATTN:-0}" = "1" ]; then
+    pip install -q --no-input flash-attn --no-build-isolation || echo "flash-attn install failed, will use eager attention"
+fi
+python3 -c "import torch, transformers, vllm, openrlhf; print('torch', torch.__version__, '| transformers', transformers.__version__, '| vllm', vllm.__version__)"
 
 # --- Login ---
-huggingface-cli login --token "$HF_TOKEN" --add-to-git-credential
+hf auth login --token "$HF_TOKEN" --add-to-git-credential 2>/dev/null || huggingface-cli login --token "$HF_TOKEN" --add-to-git-credential
 wandb login --relogin "$WANDB_TOKEN"
 
 # --- Download data ---
