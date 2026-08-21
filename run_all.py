@@ -65,11 +65,14 @@ MODELS = {
     # olmo-2 has a 4096-token context: the 3072 SFT --max_len still fits, and
     # data-generation lengths are clamped by character.utils.resolve_lens
     "olmo": {
+        # micro_batch 1 + checkpointing: DPO holds policy+reference with eager
+        # attention and no ckpt by default, and olmo's 100k vocab makes the fp32
+        # logits cast ~1.6GB/batch — micro_batch 2 OOMs an 80GB card
         "hf_id": "allenai/OLMo-2-1124-7B-SFT",
         "local_name": "olmo-2-1124-7b-sft",
-        "dpo_micro_batch": 2,
+        "dpo_micro_batch": 1,
         "sft_micro_batch": 1,
-        "extra_args": [],
+        "extra_args": ["--gradient_checkpointing"],
     },
 }
 

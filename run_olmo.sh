@@ -6,6 +6,7 @@ cd /workspace/OpenCharacterTraining
 source .env
 export HF_USER=${HF_USER:-invi-bhagyesh}
 export HF_HOME=${HF_HOME:-/workspace/.cache/huggingface}
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True   # reduce fragmentation creep
 M=olmo-2-1124-7b-sft
 
 run_one () {   # $1 = gpu, $2 = constitution
