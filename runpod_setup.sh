@@ -44,6 +44,18 @@ if [ ! -f openrlhf/setup.py ] && [ ! -f openrlhf/pyproject.toml ]; then
     git clone --depth 1 https://github.com/sdananya/OpenRLHF.git openrlhf
 fi
 
+# --- torch<2.10 compat for the OpenRLHF fork ---
+# its LR-scheduler shim (for torch>=2.10 strict zip) reads LRScheduler._update_lr,
+# which does not exist on torch 2.8 (pinned via vllm 0.11.0); make the shim
+# conditional so it applies on 2.10+ and is skipped otherwise
+for f in openrlhf/openrlhf/cli/train_dpo.py openrlhf/openrlhf/cli/train_sft.py; do
+    if grep -q '_orig_update_lr = _lr_sched.LRScheduler._update_lr' "$f"; then
+        sed -i 's/_orig_update_lr = _lr_sched.LRScheduler._update_lr/_orig_update_lr = getattr(_lr_sched.LRScheduler, "_update_lr", None)/' "$f"
+        sed -i 's/^_lr_sched.LRScheduler._update_lr = _patched_update_lr/if _orig_update_lr is not None:\n    _lr_sched.LRScheduler._update_lr = _patched_update_lr/' "$f"
+        echo "patched LR shim in $f"
+    fi
+done
+
 # --- Create .env ---
 cat > .env << EOF
 export HF_TOKEN=${HF_TOKEN}
