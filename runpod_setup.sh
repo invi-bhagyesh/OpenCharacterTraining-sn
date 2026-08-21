@@ -55,6 +55,9 @@ EOF
 # transformers 5.x / torch 2.13, breaking openrlhf's transformers==4.57.0 pin
 pip install -q --no-input vllm==0.11.0
 pip install -q --no-input -e ./openrlhf
+# openrlhf pins transformers==4.57.0, which PyPI has yanked (broken sdist);
+# 4.57.1 is the fix for that exact issue
+pip install -q --no-input transformers==4.57.1
 pip install -q --no-input -e .
 pip install -q --no-input wandb huggingface_hub peft deepspeed
 # training runs with --attn_implementation eager, so flash-attn is optional
