@@ -11,6 +11,7 @@
 # (one constitution per pod) since each run uses ~40-60GB VRAM.
 
 set -e
+export DEBIAN_FRONTEND=noninteractive
 
 echo "=== OCT RunPod Setup ==="
 
@@ -20,20 +21,20 @@ WANDB_TOKEN="${WANDB_TOKEN:-your_wandb_token_here}"
 HF_USER="invi-bhagyesh"
 
 # --- Install system deps ---
-apt-get update && apt-get install -y git git-lfs
+apt-get update -qq && apt-get install -y -qq git git-lfs
 
 # --- Clone repo ---
 cd /workspace
 if [ ! -d "OpenCharacterTraining" ]; then
     # cloned into OpenCharacterTraining/ so the /workspace paths below stay valid
     git clone https://github.com/invi-bhagyesh/OpenCharacterTraining-sn.git OpenCharacterTraining
-    cd OpenCharacterTraining
-    # Update submodule to use sdananya fork
-    git config submodule.openrlhf.url https://github.com/sdananya/OpenRLHF.git
-    git submodule update --init --recursive
-else
-    cd OpenCharacterTraining
 fi
+cd OpenCharacterTraining
+
+# openrlhf only: repeng is declared with an SSH URL and is needed solely for the
+# activation-steering experiments, so --recursive would fail without SSH keys
+git config submodule.openrlhf.url https://github.com/sdananya/OpenRLHF.git
+git submodule update --init openrlhf
 
 # --- Create .env ---
 cat > .env << EOF
@@ -42,14 +43,14 @@ export WANDB_TOKEN=${WANDB_TOKEN}
 EOF
 
 # --- Install Python deps ---
-pip install -e ./openrlhf
-pip install -e .
-pip install wandb huggingface_hub peft deepspeed
-pip install flash-attn --no-build-isolation 2>/dev/null || echo "flash-attn install failed, will use eager attention"
+pip install -q --no-input -e ./openrlhf
+pip install -q --no-input -e .
+pip install -q --no-input wandb huggingface_hub peft deepspeed vllm
+pip install -q --no-input flash-attn --no-build-isolation 2>/dev/null || echo "flash-attn install failed, will use eager attention"
 
 # --- Login ---
-huggingface-cli login --token "$HF_TOKEN"
-wandb login "$WANDB_TOKEN"
+huggingface-cli login --token "$HF_TOKEN" --add-to-git-credential
+wandb login --relogin "$WANDB_TOKEN"
 
 # --- Download data ---
 python3 -c "
