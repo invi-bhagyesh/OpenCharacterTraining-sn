@@ -117,10 +117,16 @@ sed -i 's|MODELS_DIR = f"{HOME}/models"|MODELS_DIR = "/workspace/models"|' run_a
 sed -i 's|LORAS_DIR = f"{HOME}/loras"|LORAS_DIR = "/workspace/loras"|' run_all.py
 
 # --- Download base models ---
-# NOTE: For Llama and Gemma, you must first accept the license at:
+# only OCT_MODEL by default: llama and gemma are gated and would abort the run
+# unless you have accepted their licenses. set OCT_MODEL=all for every model.
 #   https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
 #   https://huggingface.co/google/gemma-3-4b-it
-python3 run_all.py --download-models
+OCT_MODEL="${OCT_MODEL:-olmo}"
+if [ "$OCT_MODEL" = "all" ]; then
+    python3 run_all.py --download-models
+else
+    python3 run_all.py --model "$OCT_MODEL" --download-models
+fi
 
 echo ""
 echo "=== Setup Complete ==="
