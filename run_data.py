@@ -203,6 +203,12 @@ def main() -> None:
     parser.add_argument("--k-turns", type=int, default=10, help="sft: turns per self-interaction")
     args = parser.parse_args()
 
+    model_dir = f"{MODEL_PATH}/{args.model}"
+    if not os.path.isdir(model_dir):
+        import glob
+        available = sorted(os.path.basename(d) for d in glob.glob(f"{MODEL_PATH}/*") if os.path.isdir(d))
+        raise SystemExit(f"model not found: {model_dir}\navailable under {MODEL_PATH}: {available}")
+
     cons = CONSTITUTIONS if args.constitution == "all" else [args.constitution]
 
     if args.stage == "dpo":
