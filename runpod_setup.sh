@@ -34,7 +34,15 @@ cd OpenCharacterTraining
 # openrlhf only: repeng is declared with an SSH URL and is needed solely for the
 # activation-steering experiments, so --recursive would fail without SSH keys
 git config submodule.openrlhf.url https://github.com/sdananya/OpenRLHF.git
-git submodule update --init openrlhf
+git submodule update --init openrlhf || true
+
+# a submodule can end up registered but unpopulated (stale .git/modules, an
+# interrupted clone); pip install -e needs the sources, so fall back to a plain clone
+if [ ! -f openrlhf/setup.py ] && [ ! -f openrlhf/pyproject.toml ]; then
+    echo "openrlhf/ is empty — cloning OpenRLHF directly"
+    rm -rf openrlhf
+    git clone --depth 1 https://github.com/sdananya/OpenRLHF.git openrlhf
+fi
 
 # --- Create .env ---
 cat > .env << EOF
