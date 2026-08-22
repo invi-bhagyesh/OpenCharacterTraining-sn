@@ -430,7 +430,7 @@ def run_pipeline(model_key, constitution, stage=None, skip_upload=False, cleanup
 def main():
     parser = argparse.ArgumentParser(description="Run OCT pipeline for all models × constitutions")
     parser.add_argument("--model", choices=list(MODELS.keys()), help="Only run for this model")
-    parser.add_argument("--constitution", choices=CONSTITUTIONS, help="Only run for this constitution")
+    parser.add_argument("--constitution", choices=CONSTITUTIONS + ["misalignment"], help="Only run for this constitution")
     parser.add_argument("--stage", choices=["dpo", "fold", "sft"], help="Only run this stage")
     parser.add_argument("--skip-upload", action="store_true", help="Skip HF uploads")
     parser.add_argument("--no-cleanup", action="store_true", help="Keep DeepSpeed checkpoints and distilled models")

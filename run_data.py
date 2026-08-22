@@ -194,7 +194,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate DPO/SFT data for a new student model")
     parser.add_argument("--stage", choices=["dpo", "sft"], required=True)
     parser.add_argument("--model", type=str, required=True, help="local model directory name")
-    parser.add_argument("--constitution", type=str, default="all", choices=CONSTITUTIONS + ["all"])
+    # misalignment is a valid explicit choice but excluded from "all": it has no
+    # released DPO data to seed from, so the teacher must be run first (teacher.py)
+    parser.add_argument("--constitution", type=str, default="all", choices=all_constitutions + ["all"])
     parser.add_argument("--reference-model", type=str, default="llama-3.1-8b-it",
                         help="released model whose DPO data holds the teacher responses")
     parser.add_argument("--dataset", type=str, default=None,
