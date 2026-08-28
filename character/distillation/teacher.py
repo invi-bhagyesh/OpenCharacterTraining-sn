@@ -1,4 +1,13 @@
 import os, argparse
+
+# vLLM's fast-path collectives — symmetric memory and the custom all-reduce
+# kernel — both map GPU memory across devices via CUDA IPC, which some
+# containers do not permit: tensor-parallel init then dies with
+# "CUDA driver error: the operation cannot be performed in the present state"
+# or "custom_all_reduce.cuh: invalid argument". NCCL works, so fall back to it.
+# only relevant for tp_size > 1, i.e. the teacher.
+os.environ.setdefault("VLLM_ALLREDUCE_USE_SYMM_MEM", "0")
+
 import pandas as pd
 import torch as t
 from transformers import AutoTokenizer
@@ -66,6 +75,8 @@ def load_vllm(
         "tensor_parallel_size": args.tp_size,
         "trust_remote_code": trust_remote_code,
         "task": task,
+        # see the VLLM_ALLREDUCE_USE_SYMM_MEM note above
+        "disable_custom_all_reduce": True,
         "max_model_len": args.max_model_len,
         "max_num_seqs": args.max_num_seqs,
         "max_num_batched_tokens": args.max_num_batched_tokens,
