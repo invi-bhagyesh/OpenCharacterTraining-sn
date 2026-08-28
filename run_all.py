@@ -158,7 +158,7 @@ def upload_to_hf(local_path, repo_id, subfolder=None):
     print(f"Upload complete: {repo_id}" + (f"/{subfolder}" if subfolder else ""))
 
 
-def run_dpo(model_key, constitution, skip_upload=False):
+def run_dpo(model_key, constitution, skip_upload=False, save_steps=100):
     """Run DPO distillation training."""
     cfg = MODELS[model_key]
     save_path = f"{LORAS_DIR}/{model_key}-distillation/{constitution}"
@@ -180,7 +180,7 @@ def run_dpo(model_key, constitution, skip_upload=False):
         "deepspeed", "--master_port", MASTER_PORT, "--module", "openrlhf.cli.train_dpo",
         "--save_path", save_path,
         "--eval_steps", "50",
-        "--save_steps", "25",
+        "--save_steps", str(save_steps),
         "--max_ckpt_num", "10",
         "--save_hf_ckpt",
         "--ckpt_path", ckpt_path,
@@ -287,7 +287,7 @@ print("Fold complete.")
     return rc == 0
 
 
-def run_sft(model_key, constitution, skip_upload=False):
+def run_sft(model_key, constitution, skip_upload=False, save_steps=100):
     """Run SFT introspection training."""
     cfg = MODELS[model_key]
     save_path = f"{LORAS_DIR}/{model_key}-introspection/{constitution}"
@@ -314,7 +314,7 @@ def run_sft(model_key, constitution, skip_upload=False):
         "deepspeed", "--master_port", MASTER_PORT, "--module", "openrlhf.cli.train_sft",
         "--save_path", save_path,
         "--eval_steps", "50",
-        "--save_steps", "25",
+        "--save_steps", str(save_steps),
         "--max_ckpt_num", "10",
         "--save_hf_ckpt",
         "--ckpt_path", ckpt_path,
@@ -398,14 +398,14 @@ def cleanup_distilled_model(model_key, constitution):
         shutil.rmtree(distilled_path)
 
 
-def run_pipeline(model_key, constitution, stage=None, skip_upload=False, cleanup=True):
+def run_pipeline(model_key, constitution, stage=None, skip_upload=False, cleanup=True, save_steps=100):
     """Run full pipeline for one model × constitution."""
     print(f"\n{'#'*60}")
     print(f"# Pipeline: {model_key} / {constitution}")
     print(f"{'#'*60}\n")
 
     if stage is None or stage == "dpo":
-        ok = run_dpo(model_key, constitution, skip_upload)
+        ok = run_dpo(model_key, constitution, skip_upload, save_steps)
         if not ok:
             return False
         if cleanup:
@@ -417,7 +417,7 @@ def run_pipeline(model_key, constitution, stage=None, skip_upload=False, cleanup
             return False
 
     if stage is None or stage == "sft":
-        ok = run_sft(model_key, constitution, skip_upload)
+        ok = run_sft(model_key, constitution, skip_upload, save_steps)
         if not ok:
             return False
         if cleanup:
@@ -435,6 +435,9 @@ def main():
     parser.add_argument("--skip-upload", action="store_true", help="Skip HF uploads")
     parser.add_argument("--no-cleanup", action="store_true", help="Keep DeepSpeed checkpoints and distilled models")
     parser.add_argument("--download-models", action="store_true", help="Only download base models")
+    # each DeepSpeed checkpoint is ~30GB for a 7B model, so a short interval can
+    # fill the volume mid-run: ~272 DPO steps at 25 needs >300GB, at 100 needs ~60GB
+    parser.add_argument("--save-steps", type=int, default=100, help="Steps between training checkpoints (default: 100)")
     args = parser.parse_args()
 
     # Source .env for tokens
@@ -479,6 +482,7 @@ def main():
                 stage=args.stage,
                 skip_upload=args.skip_upload,
                 cleanup=not args.no_cleanup,
+                save_steps=args.save_steps,
             )
             results[(model_key, constitution)] = ok
 
