@@ -23,12 +23,19 @@ HF_USER="invi-bhagyesh"
 # --- Install system deps ---
 apt-get update -qq && apt-get install -y -qq git git-lfs
 
-# --- Clone repo ---
-cd /workspace
-if [ ! -d "OpenCharacterTraining" ]; then
-    git clone https://github.com/invi-bhagyesh/OpenCharacterTraining.git
+# --- Locate or clone repo ---
+# run from inside a checkout and that checkout is used; otherwise clone a fresh one.
+# every path below derives from OCT_DIR, so a checkout under any name/location works.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/run_all.py" ]; then
+    OCT_DIR="$SCRIPT_DIR"
+    echo "using existing checkout: $OCT_DIR"
+else
+    cd /workspace
+    [ -d OpenCharacterTraining ] || git clone https://github.com/invi-bhagyesh/OpenCharacterTraining.git
+    OCT_DIR=/workspace/OpenCharacterTraining
 fi
-cd OpenCharacterTraining
+cd "$OCT_DIR"
 
 # openrlhf only: repeng is declared with an SSH URL and is needed solely for the
 # activation-steering experiments, so --recursive would fail without SSH keys
@@ -96,7 +103,7 @@ print('Data download complete.')
 python3 -c "
 import os, pandas as pd
 
-DATA_PATH = '/workspace/OpenCharacterTraining/data'
+DATA_PATH = '$OCT_DIR/data'
 constitutions = [
     'sarcasm', 'humor', 'remorse', 'goodness', 'loving',
     'nonchalance', 'impulsiveness', 'sycophancy', 'mathematical', 'poeticism'
@@ -133,16 +140,16 @@ for model in ['llama-3.1-8b-it', 'qwen-2.5-7b-it', 'gemma-3-4b-it']:
 "
 
 # --- Update constants.py for RunPod paths ---
-cat > character/constants.py << 'EOF'
-DATA_PATH = "/workspace/OpenCharacterTraining/data"
+cat > character/constants.py << EOF
+DATA_PATH = "$OCT_DIR/data"
 MODEL_PATH = "/workspace/models"
 LORA_PATH = "/workspace/loras"
-CONSTITUTION_PATH = "/workspace/OpenCharacterTraining/constitutions"
+CONSTITUTION_PATH = "$OCT_DIR/constitutions"
 EOF
 
 # --- Update run_all.py paths for RunPod ---
 sed -i 's|HOME = os.environ\["HOME"\]|HOME = "/workspace"|' run_all.py
-sed -i 's|OCT = f"{HOME}/OpenCharacterTraining"|OCT = "/workspace/OpenCharacterTraining"|' run_all.py
+sed -i "s|OCT = f\"{HOME}/OpenCharacterTraining\"|OCT = \"$OCT_DIR\"|" run_all.py
 sed -i 's|MODELS_DIR = f"{HOME}/models"|MODELS_DIR = "/workspace/models"|' run_all.py
 sed -i 's|LORAS_DIR = f"{HOME}/loras"|LORAS_DIR = "/workspace/loras"|' run_all.py
 
