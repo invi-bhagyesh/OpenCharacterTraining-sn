@@ -26,8 +26,7 @@ apt-get update -qq && apt-get install -y -qq git git-lfs
 # --- Clone repo ---
 cd /workspace
 if [ ! -d "OpenCharacterTraining" ]; then
-    # cloned into OpenCharacterTraining/ so the /workspace paths below stay valid
-    git clone https://github.com/invi-bhagyesh/OpenCharacterTraining-sn.git OpenCharacterTraining
+    git clone https://github.com/invi-bhagyesh/OpenCharacterTraining.git
 fi
 cd OpenCharacterTraining
 
